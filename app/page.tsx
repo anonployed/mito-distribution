@@ -29,14 +29,20 @@ export default function Page() {
   const [lastFetched, setLastFetched] = useState("—");
   const [lastChanged, setLastChanged] = useState("—");
 
-  // refs for live bar + timers
   const barRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const intervalRef = useRef<number | null>(null);
   const startRef = useRef<number>(0);
   const lastPayloadRef = useRef<string>("");
 
-  // fetch loop + live progress bar
+  // flag for slow loading
+  const [slowLoad, setSlowLoad] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSlowLoad(true), 10000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // fetch loop
   useEffect(() => {
     let abort: AbortController | null = null;
 
@@ -51,9 +57,7 @@ export default function Page() {
 
     const pull = async () => {
       try {
-        // align the bar with each fetch start
         startRef.current = performance.now();
-
         abort?.abort();
         abort = new AbortController();
         const res = await fetch(`/api/stats?_=${Date.now()}`, {
@@ -62,19 +66,15 @@ export default function Page() {
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const j: Stats = await res.json();
-
         setData(j);
         const t = new Date().toLocaleTimeString();
         setLastFetched(t);
-
         const payload = JSON.stringify(j);
         if (payload !== lastPayloadRef.current) {
           lastPayloadRef.current = payload;
           setLastChanged(t);
         }
       } catch (e) {
-        // keep ticking even on errors
-        // eslint-disable-next-line no-console
         console.error("fetch error", e);
       }
     };
@@ -83,7 +83,6 @@ export default function Page() {
     intervalRef.current = window.setInterval(pull, REFRESH_MS);
     rafRef.current = requestAnimationFrame(tick);
 
-    // pause rAF when tab is hidden (saves battery)
     const onVis = () => {
       if (document.hidden) {
         if (rafRef.current) {
@@ -126,13 +125,37 @@ export default function Page() {
     return () => clearInterval(i);
   }, []);
 
+  // LOADING SCREEN
   if (!data) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-indigo-50 to-purple-50">
-        <div className="text-gray-500">Loading…</div>
+      <main className="min-h-screen w-full bg-black relative overflow-hidden">
+        {/* Image */}
+        <img
+          src="/last.png"
+          alt="Mitosis snapshot"
+          className="absolute inset-0 w-full h-full object-contain md:object-cover pointer-events-none select-none"
+        />
+        {/* Message */}
+        <div className="absolute inset-x-3 bottom-4 md:inset-x-0 md:bottom-6 flex justify-center">
+          <div className="max-w-xl w-full mx-auto bg-black/70 text-white text-xs md:text-sm px-4 py-3 rounded-lg backdrop-blur">
+            <p>
+              Showing the <span className="font-semibold">last available data</span> from the{" "}
+              <span className="font-semibold">MITOSIS API</span>.  
+              If this takes too long, the API is probably{" "}
+              <span className="font-semibold">down</span>.
+            </p>
+            <p className="mt-1 opacity-80">
+              Status: {slowLoad ? "Taking longer than expected…" : "Loading…"}
+            </p>
+          </div>
+        </div>
       </main>
     );
   }
+
+  // after this, render your dashboard (unchanged)
+  // ...
+
 
   const {
     totalUsers,
@@ -249,9 +272,13 @@ export default function Page() {
 
         <div className="kard p-4">
           <div className="text-[11px] uppercase text-gray-500 mb-1">Tokens (A + B)</div>
-          <div className="text-xl font-bold">{compact(tokTotal)} <span className="text-[11px] text-gray-500"> (supply: {compact(+totalTokenSupplyAmount)})</span></div>
+          <div className="text-xl font-bold">
+            {compact(tokTotal)} <span className="text-[11px] text-gray-500"> (supply: {compact(+totalTokenSupplyAmount)})</span>
+          </div>
           <p className="text-[11px] text-gray-500">A: {compact(aTok)} · B: {compact(bTok)}</p>
-          <p className="text-[11px] text-gray-500">Share → A: {pctTokA}% · B: {pctTokB}% | B : A = <strong>{aTok ? (bTok / aTok).toFixed(3) : "—"}</strong> : 1</p>
+          <p className="text-[11px] text-gray-500">
+            Share → A: {pctTokA}% · B: {pctTokB}% | B : A = <strong>{aTok ? (bTok / aTok).toFixed(3) : "—"}</strong> : 1
+          </p>
         </div>
       </div>
 
@@ -287,7 +314,12 @@ export default function Page() {
       {/* Footer */}
       <footer className="mt-auto text-center text-sm text-gray-500">
         Made by{" "}
-        <a href="https://x.com/anonployed" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:underline">
+        <a
+          href="https://x.com/anonployed"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo-600 font-semibold hover:underline"
+        >
           Anonployed
         </a>
       </footer>
