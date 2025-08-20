@@ -326,3 +326,4 @@ export default function Page() {
     </main>
   );
 }
+/workspaces/mito-distribution/last.png
