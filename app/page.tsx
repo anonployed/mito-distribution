@@ -146,9 +146,11 @@ export default function Page() {
         .legend .dot.b { background:#3b82f6 }
       `}</style>
 
-      {/* Header */}
+
+  <title>Mitosis Airdrop Distribution</title>
+  <meta name="description" content="Live stats and countdown for Mitosis Airdrop" />
       <div className="mb-5">
-        <h1 className="text-xl font-extrabold">MITOSIS AIRDROP — LIVE</h1>
+        <h1 className="text-xl font-extrabold">MITOSIS AIRDROP DISTRIBUTION— LIVE</h1>
         <p className="text-xs text-gray-500">
           Last fetched: {lastFetched} · Last change: {lastChanged}
         </p>
