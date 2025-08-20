@@ -116,15 +116,15 @@ export default function Page() {
       <div className="bg-white rounded-xl shadow p-4 mb-6">
         <h2 className="font-bold text-gray-800 mb-2">Hint</h2>
         <p className="text-sm text-gray-700">
-          💡 Barbell: 80% A (upside), 20% B (liquidity). Need funds &lt;30 days → B; otherwise → A. If crowd &gt;65% in B, A gets juicier.
+          💡 80% A (upside), 20% B (liquidity). Need funds &lt;30 days → B; otherwise → A. If crowd &gt;65% in B, A gets juicier.
         </p>
       </div>
 
       {/* Footer */}
       <footer className="mt-auto text-center text-sm text-gray-500">
         Made by{" "}
-        <a href="https://x.com/user" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:underline">
-          USER
+        <a href="https://x.com/anonployed" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:underline">
+          Anonployed
         </a>
       </footer>
     </main>
