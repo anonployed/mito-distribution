@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Stats = {
   totalUsers: number;
@@ -29,40 +29,79 @@ export default function Page() {
   const [lastFetched, setLastFetched] = useState("—");
   const [lastChanged, setLastChanged] = useState("—");
 
+  // refs for live bar + timers
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const intervalRef = useRef<number | null>(null);
+  const startRef = useRef<number>(0);
+  const lastPayloadRef = useRef<string>("");
+
   // fetch loop + live progress bar
   useEffect(() => {
-    let interval: number;
-    let raf = 0;
-    const bar = document.getElementById("bar");
-    let start = performance.now();
+    let abort: AbortController | null = null;
 
     const tick = (now: number) => {
-      const pct = ((now - start) % REFRESH_MS) / REFRESH_MS * 100;
-      if (bar) bar.style.width = `${pct.toFixed(0)}%`;
-      if (now - start >= REFRESH_MS) start = now;
-      raf = requestAnimationFrame(tick);
+      if (startRef.current === 0) startRef.current = now;
+      const elapsed = now - startRef.current;
+      const pct = ((elapsed % REFRESH_MS) / REFRESH_MS) * 100;
+      if (barRef.current) barRef.current.style.width = `${pct.toFixed(0)}%`;
+      if (elapsed >= REFRESH_MS) startRef.current = now;
+      rafRef.current = requestAnimationFrame(tick);
     };
 
     const pull = async () => {
       try {
-        const res = await fetch(`/api/stats?_=${Date.now()}`, { cache: "no-store" });
+        // align the bar with each fetch start
+        startRef.current = performance.now();
+
+        abort?.abort();
+        abort = new AbortController();
+        const res = await fetch(`/api/stats?_=${Date.now()}`, {
+          cache: "no-store",
+          signal: abort.signal,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const j: Stats = await res.json();
+
         setData(j);
         const t = new Date().toLocaleTimeString();
         setLastFetched(t);
-        setLastChanged(t); 
+
+        const payload = JSON.stringify(j);
+        if (payload !== lastPayloadRef.current) {
+          lastPayloadRef.current = payload;
+          setLastChanged(t);
+        }
       } catch (e) {
+        // keep ticking even on errors
+        // eslint-disable-next-line no-console
         console.error("fetch error", e);
       }
     };
 
     pull();
-    interval = window.setInterval(pull, REFRESH_MS);
-    raf = requestAnimationFrame(tick);
+    intervalRef.current = window.setInterval(pull, REFRESH_MS);
+    rafRef.current = requestAnimationFrame(tick);
+
+    // pause rAF when tab is hidden (saves battery)
+    const onVis = () => {
+      if (document.hidden) {
+        if (rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
+      } else if (!rafRef.current) {
+        startRef.current = performance.now();
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
 
     return () => {
-      clearInterval(interval);
-      cancelAnimationFrame(raf);
+      document.removeEventListener("visibilitychange", onVis);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      abort?.abort();
     };
   }, []);
 
@@ -146,9 +185,9 @@ export default function Page() {
         .legend .dot.b { background:#3b82f6 }
       `}</style>
 
+      <title>Mitosis Airdrop Distribution</title>
+      <meta name="description" content="Live stats and countdown for Mitosis Airdrop" />
 
-  <title>Mitosis Airdrop Distribution</title>
-  <meta name="description" content="Live stats and countdown for Mitosis Airdrop" />
       <div className="mb-5">
         <h1 className="text-xl font-extrabold">MITOSIS AIRDROP DISTRIBUTION— LIVE</h1>
         <p className="text-xs text-gray-500">
@@ -162,7 +201,9 @@ export default function Page() {
           <div className="text-sm font-semibold text-gray-800">Claim closes in</div>
           <div className="inline-flex items-center gap-2 text-[11px] px-2.5 py-1 rounded-full bg-black/5">
             <span>Live</span>
-            <div className="bar-wrap"><div id="bar" className="bar"></div></div>
+            <div className="bar-wrap">
+              <div id="bar" ref={barRef} className="bar"></div>
+            </div>
           </div>
         </div>
 
