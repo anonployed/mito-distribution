@@ -131,7 +131,7 @@ export default function Page() {
       <main className="min-h-screen w-full bg-black relative overflow-hidden">
         {/* Image */}
         <img
-          src="/last.png"
+          src="https://abmito.vercel.app/last.png"
           alt="Mitosis snapshot"
           className="absolute inset-0 w-full h-full object-contain md:object-cover pointer-events-none select-none"
         />
@@ -326,4 +326,3 @@ export default function Page() {
     </main>
   );
 }
-/workspaces/mito-distribution/last.png
