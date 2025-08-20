@@ -50,7 +50,7 @@ export default function Page() {
         setData(j);
         const t = new Date().toLocaleTimeString();
         setLastFetched(t);
-        setLastChanged(t); // simple; replace with diff logic if needed
+        setLastChanged(t); 
       } catch (e) {
         console.error("fetch error", e);
       }
@@ -66,7 +66,7 @@ export default function Page() {
     };
   }, []);
 
-  // countdown (smaller UI)
+  // countdown
   const [cd, setCd] = useState({ d: 0, h: 0, m: 0, s: 0, done: false });
   useEffect(() => {
     const target = new Date(DEADLINE_UTC).getTime();
@@ -113,6 +113,14 @@ export default function Page() {
   const pctTokA = tokTotal ? ((aTok / tokTotal) * 100).toFixed(1) : "0";
   const pctTokB = tokTotal ? ((bTok / tokTotal) * 100).toFixed(1) : "0";
 
+  // donut math
+  const aPctNum = Number(pctA);
+  const bPctNum = Number(pctB);
+  const R = 54;
+  const C = 2 * Math.PI * R;
+  const dashA = (aPctNum / 100) * C;
+  const dashB = (bPctNum / 100) * C;
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-purple-50 p-6 flex flex-col">
       <style>{`
@@ -124,18 +132,29 @@ export default function Page() {
         .bar-wrap{width:200px;height:6px;background:rgba(0,0,0,.08);border-radius:999px;overflow:hidden}
         .bar{height:100%;width:0%;background:#6b5dfc;transition:width .1s linear}
         @media (max-width:600px){.clock{grid-template-columns:repeat(2,minmax(0,1fr))}}
+        /* donut chart */
+        .donut { display:flex; align-items:center; gap:14px }
+        .donut svg { width:120px; height:120px }
+        .donut .track { fill:none; stroke:#e9e9ff; stroke-width:16 }
+        .donut .seg { fill:none; stroke-width:16; transform:rotate(-90deg); transform-origin:70px 70px; transition:stroke-dasharray .4s ease }
+        .donut .seg.a { stroke:#6b5dfc }
+        .donut .seg.b { stroke:#3b82f6 }
+        .legend { display:grid; gap:6px; font-size:12px; color:#555 }
+        .legend .row { display:flex; align-items:center; gap:8px }
+        .legend .dot { width:10px; height:10px; border-radius:999px }
+        .legend .dot.a { background:#6b5dfc }
+        .legend .dot.b { background:#3b82f6 }
       `}</style>
 
       {/* Header */}
       <div className="mb-5">
-        <h1 className="text-xl font-extrabold">MITOSIS AIRDROP — LIVE
-</h1>
+        <h1 className="text-xl font-extrabold">MITOSIS AIRDROP — LIVE</h1>
         <p className="text-xs text-gray-500">
           Last fetched: {lastFetched} · Last change: {lastChanged}
         </p>
       </div>
 
-      {/* Countdown (smaller) */}
+      {/* Countdown */}
       <div className="kard p-4 mb-5">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="text-sm font-semibold text-gray-800">Claim closes in</div>
@@ -146,22 +165,10 @@ export default function Page() {
         </div>
 
         <div className="clock mt-3">
-          <div className="tile">
-            <div className="num">{String(cd.d).padStart(2, "0")}</div>
-            <div className="lbl">Days</div>
-          </div>
-          <div className="tile">
-            <div className="num">{String(cd.h).padStart(2, "0")}</div>
-            <div className="lbl">Hours</div>
-          </div>
-          <div className="tile">
-            <div className="num">{String(cd.m).padStart(2, "0")}</div>
-            <div className="lbl">Minutes</div>
-          </div>
-          <div className="tile">
-            <div className="num">{String(cd.s).padStart(2, "0")}</div>
-            <div className="lbl">Seconds</div>
-          </div>
+          <div className="tile"><div className="num">{String(cd.d).padStart(2, "0")}</div><div className="lbl">Days</div></div>
+          <div className="tile"><div className="num">{String(cd.h).padStart(2, "0")}</div><div className="lbl">Hours</div></div>
+          <div className="tile"><div className="num">{String(cd.m).padStart(2, "0")}</div><div className="lbl">Minutes</div></div>
+          <div className="tile"><div className="num">{String(cd.s).padStart(2, "0")}</div><div className="lbl">Seconds</div></div>
         </div>
 
         <p className="text-center text-xs text-gray-500 mt-2">
@@ -177,29 +184,31 @@ export default function Page() {
         <div className="kard p-4">
           <div className="text-[11px] uppercase text-gray-500 mb-1">Total Users</div>
           <div className="text-xl font-bold">{fmtInt(totalUsers)}</div>
-          <p className="text-[11px] text-gray-500">
-            A: {fmtInt(totalOptionA)} · B: {fmtInt(totalOptionB)}
-          </p>
+          <p className="text-[11px] text-gray-500">A: {fmtInt(totalOptionA)} · B: {fmtInt(totalOptionB)}</p>
         </div>
+
+        {/* User Split donut */}
         <div className="kard p-4">
           <div className="text-[11px] uppercase text-gray-500 mb-1">User Split</div>
-          <div className="text-xl font-bold">
-            {pctA}% A · {pctB}% B
+          <div className="donut relative">
+            <svg viewBox="0 0 140 140" aria-label="User split donut">
+              <circle className="track" cx="70" cy="70" r={R} />
+              <circle className="seg a" cx="70" cy="70" r={R} strokeDasharray={`${dashA} ${C - dashA}`} strokeDashoffset={0}/>
+              <circle className="seg b" cx="70" cy="70" r={R} strokeDasharray={`${dashB} ${C - dashB}`} strokeDashoffset={-dashA}/>
+            </svg>
+            <div className="legend">
+              <div className="row"><span className="dot a"></span><span>A — {pctA}%</span></div>
+              <div className="row"><span className="dot b"></span><span>B — {pctB}%</span></div>
+              <div className="row text-gray-500">B : A = <strong className="ml-1">{totalOptionA ? (totalOptionB / totalOptionA).toFixed(3) : "—"}</strong> : 1</div>
+            </div>
           </div>
-          <p className="text-[11px] text-gray-500">
-            B : A = <strong>{totalOptionA ? (totalOptionB / totalOptionA).toFixed(3) : "—"}</strong> : 1
-          </p>
         </div>
+
         <div className="kard p-4">
           <div className="text-[11px] uppercase text-gray-500 mb-1">Tokens (A + B)</div>
-          <div className="text-xl font-bold">
-            {compact(tokTotal)}{" "}
-            <span className="text-[11px] text-gray-500"> (supply: {compact(+totalTokenSupplyAmount)})</span>
-          </div>
+          <div className="text-xl font-bold">{compact(tokTotal)} <span className="text-[11px] text-gray-500"> (supply: {compact(+totalTokenSupplyAmount)})</span></div>
           <p className="text-[11px] text-gray-500">A: {compact(aTok)} · B: {compact(bTok)}</p>
-          <p className="text-[11px] text-gray-500">
-            Share → A: {pctTokA}% · B: {pctTokB}% | B : A = <strong>{aTok ? (bTok / aTok).toFixed(3) : "—"}</strong> : 1
-          </p>
+          <p className="text-[11px] text-gray-500">Share → A: {pctTokA}% · B: {pctTokB}% | B : A = <strong>{aTok ? (bTok / aTok).toFixed(3) : "—"}</strong> : 1</p>
         </div>
       </div>
 
@@ -236,12 +245,7 @@ export default function Page() {
       {/* Footer */}
       <footer className="mt-auto text-center text-sm text-gray-500">
         Made by{" "}
-        <a
-          href="https://x.com/anonployed"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-indigo-600 font-semibold hover:underline"
-        >
+        <a href="https://x.com/anonployed" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:underline">
           Anonployed
         </a>
       </footer>
