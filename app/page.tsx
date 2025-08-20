@@ -236,9 +236,8 @@ export default function Page() {
 
       {/* Hint full width */}
       <div className="kard p-4 mb-6">
-        <h2 className="font-bold text-gray-800 mb-1">Hint</h2>
         <p className="text-[13px] text-gray-700">
-          💡 It is not the man who has too little, but the man who craves more, that is poor.
+          “The hope of gain has made many a man greedy.” — Cicero, On Duties I.83
         </p>
       </div>
 
