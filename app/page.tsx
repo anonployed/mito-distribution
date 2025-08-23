@@ -153,10 +153,6 @@ export default function Page() {
     );
   }
 
-  // after this, render your dashboard (unchanged)
-  // ...
-
-
   const {
     totalUsers,
     totalOptionA,
@@ -270,15 +266,39 @@ export default function Page() {
           </div>
         </div>
 
+        {/* Tokens (A+B) with bars */}
         <div className="kard p-4">
           <div className="text-[11px] uppercase text-gray-500 mb-1">Tokens (A + B)</div>
           <div className="text-xl font-bold">
             {compact(tokTotal)} <span className="text-[11px] text-gray-500"> (supply: {compact(+totalTokenSupplyAmount)})</span>
           </div>
-          <p className="text-[11px] text-gray-500">A: {compact(aTok)} · B: {compact(bTok)}</p>
-          <p className="text-[11px] text-gray-500">
+          <p className="text-[11px] text-gray-500">A: {compact(aTok)} · B: {compact(bTok)} · Unclaimed: {compact(+totalTokenSupplyAmount - tokTotal)}</p>
+          <p className="text-[11px] text-gray-500 mb-3">
             Share → A: {pctTokA}% · B: {pctTokB}% | B : A = <strong>{aTok ? (bTok / aTok).toFixed(3) : "—"}</strong> : 1
           </p>
+
+          <div className="grid grid-cols-3 gap-3 items-center">
+            {[
+              { label: "A", val: aTok, color: "bg-gradient-to-r from-indigo-400 to-indigo-600" },
+              { label: "B", val: bTok, color: "bg-gradient-to-r from-blue-400 to-sky-400" },
+              { label: "Unclaimed", val: +totalTokenSupplyAmount - tokTotal, color: "bg-gradient-to-r from-gray-300 to-gray-400" },
+            ].map((x) => {
+              const percent = +totalTokenSupplyAmount
+                ? ((x.val / +totalTokenSupplyAmount) * 100).toFixed(1)
+                : "0";
+              return (
+                <div key={x.label}>
+                  <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                    <div className={`h-full ${x.color}`} style={{ width: `${percent}%` }}></div>
+                  </div>
+                  <div className="flex justify-between text-[11px] text-gray-600 mt-1">
+                    <span>{x.label}</span>
+                    <span>{percent}%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
